@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SmartNote Debug UI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 { color: #333; margin-bottom: 30px; text-align: center; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #555; font-weight: 600; }
+        input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; }
+        input:focus { outline: none; border-color: #667eea; }
+        button { width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #764ba2; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .result { margin-top: 30px; padding: 15px; border-radius: 6px; display: none; }
+        .result.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; display: block; }
+        .result.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; display: block; }
+        .loading { display: none; text-align: center; color: #667eea; margin-top: 10px; }
+        .loading.active { display: block; }
+        .section { margin-bottom: 40px; padding-bottom: 30px; border-bottom: 2px solid #f0f0f0; }
+        h2 { color: #667eea; font-size: 18px; margin-bottom: 15px; }
+        .small-text { font-size: 12px; color: #888; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐛 SmartNote Debug UI</h1>
+        
+        <div class="section">
+            <h2>Step 1: Create Missing User</h2>
+            <div class="form-group">
+                <label>User ID:</label>
+                <input type="text" id="userId" placeholder="9e417735-882c-472e-b546-fc62ca219a19">
+                <div class="small-text">Copy from your Supabase auth UUID</div>
+            </div>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="email" placeholder="your-email@example.com">
+            </div>
+            <button onclick="createUser()">Create User</button>
+            <div class="loading" id="loading1">Creating...</div>
+            <div class="result" id="result1"></div>
+        </div>
+
+        <div class="section">
+            <h2>Step 2: Verify User Exists</h2>
+            <div class="form-group">
+                <label>User ID:</label>
+                <input type="text" id="checkUserId" placeholder="9e417735-882c-472e-b546-fc62ca219a19">
+            </div>
+            <button onclick="checkUser()">Check User</button>
+            <div class="loading" id="loading2">Checking...</div>
+            <div class="result" id="result2"></div>
+        </div>
+
+        <div class="section">
+            <h2>Step 3: Test Note Creation</h2>
+            <div class="form-group">
+                <label>User ID:</label>
+                <input type="text" id="testUserId" placeholder="9e417735-882c-472e-b546-fc62ca219a19">
+            </div>
+            <div class="form-group">
+                <label>Title:</label>
+                <input type="text" id="testTitle" value="Test Note">
+            </div>
+            <div class="form-group">
+                <label>Content:</label>
+                <input type="text" id="testContent" value="Testing note creation functionality">
+            </div>
+            <button onclick="testInsert()">Test Insert</button>
+            <div class="loading" id="loading3">Testing...</div>
+            <div class="result" id="result3"></div>
+        </div>
+
+        <div class="section" style="border-bottom: none;">
+            <p style="color: #888; font-size: 13px; text-align: center;">After completing these steps, try saving a note in SmartNote</p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        async function createUser() {
+            const userId = document.getElementById('userId').value;
+            const email = document.getElementById('email').value;
+            const loading = document.getElementById('loading1');
+            const result = document.getElementById('result1');
+            
+            if (!userId || !email) {
+                result.className = 'result error';
+                result.textContent = 'Please fill in all fields';
+                return;
+            }
+            
+            loading.classList.add('active');
+            try {
+                const response = await fetch(`${API_URL}/api/debug/create-user?user_id=${userId}&email=${email}`, { 
+                    method: 'POST'
+                });
+                const data = await response.json();
+                loading.classList.remove('active');
+                
+                if (data.status === 'success') {
+                    result.className = 'result success';
+                    result.textContent = '✅ User created successfully!';
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ Error: ' + data.error;
+                }
+            } catch (e) {
+                loading.classList.remove('active');
+                result.className = 'result error';
+                result.textContent = '❌ Error: ' + e.message;
+            }
+        }
+
+        async function checkUser() {
+            const userId = document.getElementById('checkUserId').value;
+            const loading = document.getElementById('loading2');
+            const result = document.getElementById('result2');
+            
+            if (!userId) {
+                result.className = 'result error';
+                result.textContent = 'Please enter a User ID';
+                return;
+            }
+            
+            loading.classList.add('active');
+            try {
+                const response = await fetch(`${API_URL}/api/debug/users/${userId}`);
+                const data = await response.json();
+                loading.classList.remove('active');
+                
+                if (data.user_exists) {
+                    result.className = 'result success';
+                    result.textContent = '✅ User exists!';
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ User not found - create it first';
+                }
+            } catch (e) {
+                loading.classList.remove('active');
+                result.className = 'result error';
+                result.textContent = '❌ Error: ' + e.message;
+            }
+        }
+
+        async function testInsert() {
+            const userId = document.getElementById('testUserId').value;
+            const title = document.getElementById('testTitle').value;
+            const content = document.getElementById('testContent').value;
+            const loading = document.getElementById('loading3');
+            const result = document.getElementById('result3');
+            
+            if (!userId || !title || !content) {
+                result.className = 'result error';
+                result.textContent = 'Please fill in all fields';
+                return;
+            }
+            
+            loading.classList.add('active');
+            try {
+                const response = await fetch(`${API_URL}/api/notes/?user_id=${userId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content })
+                });
+                const data = await response.json();
+                loading.classList.remove('active');
+                
+                if (response.ok) {
+                    result.className = 'result success';
+                    result.textContent = '✅ Note created successfully! ID: ' + data.id;
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ Error: ' + data.detail;
+                }
+            } catch (e) {
+                loading.classList.remove('active');
+                result.className = 'result error';
+                result.textContent = '❌ Error: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>

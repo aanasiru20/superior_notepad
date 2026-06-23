@@ -1,0 +1,31 @@
+# FastAPI & Server
+fastapi
+uvicorn
+python-multipart
+
+# Environment & Configuration
+python-dotenv
+
+# Database & Auth
+supabase
+
+# Data Validation
+pydantic
+pydantic-settings
+
+# File Processing - PDF
+PyPDF2
+pdfplumber
+
+# File Processing - Document
+python-docx
+
+# HTTP & API
+requests
+
+# AI/ML - Google Gemini
+google-generativeai
+
+# Speech Processing
+gtts
+
